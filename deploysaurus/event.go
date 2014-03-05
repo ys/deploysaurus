@@ -29,9 +29,15 @@ func (event *Event) Tarball() string {
 }
 
 func (event *Event) What() string {
+	if event.Repository == nil {
+		return ""
+	}
 	return event.Repository.FullName
 }
 
 func (event *Event) Who() string {
+	if event.Sender == nil {
+		return ""
+	}
 	return event.Sender.Login
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/codegangsta/martini"
+	"github.com/martini-contrib/auth"
 	"github.com/martini-contrib/binding"
 	"github.com/ys/deploysaurus/deploysaurus"
 	"net/http"
@@ -12,6 +13,7 @@ import _ "github.com/joho/godotenv/autoload"
 
 func main() {
 	m := martini.Classic()
+	m.Use(auth.Basic("hooks", os.Getenv("HOOK_KEY")))
 	m.Post("/hooks", checkEvent(), binding.Json(deploysaurus.Event{}), binding.ErrorHandler, func(event deploysaurus.Event) string {
 		fmt.Println(event.Who(), "deploys", event.What(), ":", event)
 		return deploysaurus.Deploy(event)

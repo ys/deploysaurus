@@ -1,0 +1,11 @@
+language: go
+go:
+  - 1.1.2
+  - 1.2
+  - release
+  - tip
+
+matrix:
+  allow_failures:
+    - go: release
+    - go: tip

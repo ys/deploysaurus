@@ -13,3 +13,41 @@ func TestTarball(t *testing.T) {
 		t.Error("Expected ", tarball, " got ", eventTarball)
 	}
 }
+
+func TestWhat(t *testing.T) {
+	repo := Repository{FullName: "full_name"}
+	event := Event{Repository: &repo}
+	what := "full_name"
+	eventWhat := event.What()
+	if what != eventWhat {
+		t.Error("Expected ", what, " got ", eventWhat)
+	}
+}
+
+func TestWhatWithoutRepo(t *testing.T) {
+	event := Event{}
+	what := ""
+	eventWhat := event.What()
+	if what != eventWhat {
+		t.Error("Expected ", what, " got ", eventWhat)
+	}
+}
+
+func TestWho(t *testing.T) {
+	user := User{Login: "login"}
+	event := Event{Sender: &user}
+	who := "login"
+	eventWho := event.Who()
+	if who != eventWho {
+		t.Error("Expected ", who, " got ", eventWho)
+	}
+}
+
+func TestWhoWithoutRepo(t *testing.T) {
+	event := Event{}
+	who := ""
+	eventWho := event.Who()
+	if who != eventWho {
+		t.Error("Expected ", who, " got ", eventWho)
+	}
+}

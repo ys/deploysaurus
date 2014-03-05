@@ -10,6 +10,13 @@ import (
 	"os"
 )
 
+func Deploysaurus(n int, events <-chan Event) {
+	for event := range events {
+		log.Println("Dinosaur", n, "processing event", event)
+		Deploy(event)
+	}
+}
+
 func Deploy(event Event) string {
 	client := &http.Client{}
 	body := bytes.NewBufferString(fmt.Sprintf(`{"source_blob":{"url":"%s"}}`, event.Tarball()))

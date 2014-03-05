@@ -14,3 +14,4 @@ Todo:
 * Moar tests
 * Convenience view to deploy
 * Add Oauth to authenticate GitHub sender and link it to Heroku builder
+* Move the server to the package deploysaurus and just call simple methods for launching the server (see main.go like config.ru in Sinatra)

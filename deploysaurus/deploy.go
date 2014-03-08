@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 )
 
 func Deploysaurus(n int, events <-chan Event) {
@@ -23,7 +22,7 @@ func Deploy(event Event) string {
 	req, err := http.NewRequest("POST", serviceUrl(event.Payload.HerokuApp), body)
 	req.Header.Add("Accept", "application/vnd.heroku+json; version=3")
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", authorization())
+	req.Header.Add("Authorization", authorization(event))
 	log.Println(req)
 	response, err := client.Do(req)
 	if err != nil {
@@ -42,7 +41,7 @@ func serviceUrl(herokuApp string) string {
 	return fmt.Sprintf("https://api.heroku.com/apps/%s/builds", herokuApp)
 }
 
-func authorization() string {
-	data := []byte(fmt.Sprintf(":%s", os.Getenv("HEROKU_API_TOKEN")))
+func authorization(event Event) string {
+	data := []byte(fmt.Sprintf(":%s", event.Who().HerokuToken))
 	return fmt.Sprintf("Authorization %s", base64.StdEncoding.EncodeToString(data))
 }

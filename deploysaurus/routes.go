@@ -29,7 +29,7 @@ func HandleLogout(session sessions.Session, res http.ResponseWriter, req *http.R
 }
 func HandleHooksWrapper(events chan<- Event) martini.Handler {
 	return func(event Event, res http.ResponseWriter) (int, interface{}) {
-		fmt.Println(event.Who(), "want to deploy", event.What(), ":", event)
+		fmt.Println(event.Who().Email, "want to deploy", event.What(), ":", event)
 		message, err := event.Processable()
 		if err != nil {
 			return 400, map[string]interface{}{"success": false, "message": message}

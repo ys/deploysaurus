@@ -2,7 +2,6 @@ package deploysaurus
 
 import (
 	"errors"
-	"os"
 	"strconv"
 )
 
@@ -27,7 +26,7 @@ type Payload struct {
 
 func (event *Event) Tarball() string {
 	ref := event.Sha
-	deployKey := os.Getenv("GITHUB_DEPLOY_KEY")
+	deployKey := event.Who().GitHubToken
 	return event.Repository.AuthenticatedArchiveUrl("", ref, deployKey)
 }
 
@@ -38,17 +37,15 @@ func (event *Event) What() string {
 	return event.Repository.FullName
 }
 
-func (event *Event) Who() string {
-	if event.Sender == nil {
-		return ""
-	}
-	return event.Sender.Login
+func (event *Event) Who() *DbUser {
+	dbUser, _ := GetUserFromProvider("github", strconv.Itoa(event.Sender.Id))
+	return &dbUser
 }
 
 func (event *Event) Processable() (string, error) {
-	sender, err := GetUserFromProvider("github", strconv.Itoa(event.Sender.Id))
-	if err != nil {
-		return "No user for GitHub sender", err
+	sender := event.Who()
+	if sender == nil {
+		return "No user for GitHub sender", errors.New("Bad Karma")
 	}
 	if sender.HerokuId == "" {
 		return "User not linked to Heroku, visit http://deploysaurus.yannick.io/auth/heroku when logged in",

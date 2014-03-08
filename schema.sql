@@ -12,5 +12,5 @@ CREATE TABLE users(
   heroku_expiration timestamptz
 );
 
-CREATE INDEX index_on_users_for_github_login ON users(github_login);
-CREATE INDEX index_on_users_for_heroku_id ON users(heroku_id);
+CREATE UNIQUE INDEX index_on_users_for_github_id ON users(github_id);
+CREATE UNIQUE INDEX index_on_users_for_heroku_id ON users(heroku_id);

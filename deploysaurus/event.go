@@ -1,7 +1,9 @@
 package deploysaurus
 
 import (
+	"errors"
 	"os"
+	"strconv"
 )
 
 type Event struct {
@@ -15,6 +17,7 @@ type Event struct {
 }
 
 type Sender struct {
+	Id    int    `json:"id"`
 	Login string `json:"login"`
 }
 
@@ -40,4 +43,17 @@ func (event *Event) Who() string {
 		return ""
 	}
 	return event.Sender.Login
+}
+
+func (event *Event) Processable() (string, error) {
+	sender, err := GetUserFromProvider("github", strconv.Itoa(event.Sender.Id))
+	if err != nil {
+		return "No user for GitHub sender", err
+	}
+	if sender.HerokuId == "" {
+		return "User not linked to Heroku, visit http://deploysaurus.yannick.io/auth/heroku when logged in",
+			errors.New("Bad karma")
+	}
+	return "", nil
+	//TODO: Verify if app is writable on Heroku for sender Heroku doppelganger
 }

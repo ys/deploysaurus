@@ -1,11 +1,11 @@
 package deploysaurus
 
 import (
-	"../heroku"
 	"github.com/stretchr/gomniauth"
 	"github.com/stretchr/gomniauth/common"
 	"github.com/stretchr/gomniauth/providers/github"
 	"github.com/stretchr/objx"
+	"github.com/ys/deploysaurus/heroku"
 	"os"
 )
 

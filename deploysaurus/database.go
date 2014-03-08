@@ -2,6 +2,7 @@ package deploysaurus
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/lib/pq"
 	"log"
 	"os"
@@ -118,7 +119,30 @@ func GetUser(id string) (DbUser, error) {
 		panic(err)
 	}
 	return u, err
+}
 
+func GetUserFromProvider(provider string, id string) (DbUser, error) {
+	db, err := getDB()
+	defer db.Close()
+	if err != nil {
+		log.Fatal(err)
+		panic(err)
+	}
+	var u DbUser
+	err = db.QueryRow(fmt.Sprintf("SELECT * FROM users WHERE %s_id=$1", provider), id).Scan(&u.Id,
+		&u.Email,
+		&u.GitHubLogin,
+		&u.GitHubId,
+		&u.GitHubToken,
+		&u.HerokuId,
+		&u.HerokuToken,
+		&u.HerokuRefreshToken,
+		&u.HerokuExpiration)
+	if err != nil {
+		log.Fatal(err)
+		panic(err)
+	}
+	return u, err
 }
 
 func getDB() (*DB, error) {

@@ -10,11 +10,11 @@ type Event struct {
 	Name        string      `json:"name"`
 	Payload     *Payload    `json:"payload"`
 	Description string      `json:"description"`
-	Sender      *User       `json:"sender"`
+	Sender      *Sender     `json:"sender"`
 	Repository  *Repository `json:"repository"`
 }
 
-type User struct {
+type Sender struct {
 	Login string `json:"login"`
 }
 

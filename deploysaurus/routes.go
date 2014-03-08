@@ -55,7 +55,7 @@ func RedirectToProvider(params martini.Params, res http.ResponseWriter, req *htt
 func CallbackHandler(params martini.Params, req *http.Request, res http.ResponseWriter, s sessions.Session, dbUser DbUser) {
 	user, err := GetDistantUser(params["provider"], req.URL.RawQuery)
 	if err != nil {
-		panic(err)
+		http.Redirect(res, req, fmt.Sprintf("/me?%s", err), 302)
 	}
 	creds := user.ProviderCredentials()[params["provider"]]
 	if !dbUser.Authenticated {

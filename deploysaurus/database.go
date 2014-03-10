@@ -114,9 +114,8 @@ func GetUser(id string) (DbUser, error) {
 		&u.HerokuToken,
 		&u.HerokuRefreshToken,
 		&u.HerokuExpiration)
-	if err != nil {
+	if err != nil && err == sql.ErrNoRows {
 		log.Fatal(err)
-		panic(err)
 	}
 	return u, err
 }
@@ -138,9 +137,8 @@ func GetUserFromProvider(provider string, id string) (DbUser, error) {
 		&u.HerokuToken,
 		&u.HerokuRefreshToken,
 		&u.HerokuExpiration)
-	if err != nil {
+	if err != nil && err == sql.ErrNoRows {
 		log.Fatal(err)
-		panic(err)
 	}
 	return u, err
 }
@@ -156,7 +154,6 @@ func GetUsersCount() (int, error) {
 	err = db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
 	if err != nil {
 		log.Fatal(err)
-		panic(err)
 	}
 	return count, err
 

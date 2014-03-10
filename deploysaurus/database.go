@@ -145,6 +145,23 @@ func GetUserFromProvider(provider string, id string) (DbUser, error) {
 	return u, err
 }
 
+func GetUsersCount() (int, error) {
+	db, err := getDB()
+	defer db.Close()
+	if err != nil {
+		log.Fatal(err)
+		panic(err)
+	}
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
+	if err != nil {
+		log.Fatal(err)
+		panic(err)
+	}
+	return count, err
+
+}
+
 func getDB() (*DB, error) {
 	url := os.Getenv("DATABASE_URL")
 	db, err := sql.Open("postgres", url)

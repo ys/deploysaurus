@@ -14,7 +14,8 @@ func HandleRoot(user DbUser) (int, interface{}) {
 	if user.Authenticated == true {
 		return 200, user
 	} else {
-		return 200, map[string]interface{}{"DaysWithoutAccident": 0, "LastAccident": "Dinosaur attack"}
+		count, _ := GetUsersCount()
+		return 200, map[string]interface{}{"DaysWithoutAccident": count, "LastAccident": "Dinosaur attack"}
 	}
 }
 

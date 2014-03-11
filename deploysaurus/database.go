@@ -114,7 +114,7 @@ func GetUser(id string) (DbUser, error) {
 		&u.HerokuToken,
 		&u.HerokuRefreshToken,
 		&u.HerokuExpiration)
-	if err != nil && err == sql.ErrNoRows {
+	if err != nil && err != sql.ErrNoRows {
 		log.Fatal(err)
 	}
 	return u, err
@@ -137,7 +137,7 @@ func GetUserFromProvider(provider string, id string) (DbUser, error) {
 		&u.HerokuToken,
 		&u.HerokuRefreshToken,
 		&u.HerokuExpiration)
-	if err != nil && err == sql.ErrNoRows {
+	if err != nil && err != sql.ErrNoRows {
 		log.Fatal(err)
 	}
 	return u, err

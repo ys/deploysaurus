@@ -46,7 +46,7 @@ func RedirectToProvider(params martini.Params, res http.ResponseWriter, req *htt
 		panic(err)
 	}
 	state := gomniauth.NewState("after", "success")
-	authUrl, err := provider.GetBeginAuthURL(state, objx.MSI("scope", [1]string{"repo_deployment"}))
+	authUrl, err := provider.GetBeginAuthURL(state, objx.MSI("scope", "repo, repo_deployment"))
 	if err != nil {
 		panic(err)
 	}

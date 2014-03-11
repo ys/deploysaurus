@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "./deploysaurus"
 	"github.com/ys/deploysaurus/deploysaurus"
 )
 import _ "github.com/joho/godotenv/autoload"

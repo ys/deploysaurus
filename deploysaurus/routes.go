@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/gomniauth"
 	"github.com/stretchr/objx"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -15,7 +16,10 @@ func HandleRoot(user DbUser) (int, interface{}) {
 		return 200, user
 	} else {
 		count, _ := GetUsersCount()
-		return 200, map[string]interface{}{"DaysWithoutAccident": count, "LastAccident": "Dinosaur attack"}
+		return 200, map[string]interface{}{"DaysWithoutAccident": count,
+			"LastAccident": "Dinosaur attack",
+			"GitHubAuth":   fmt.Sprintf("https://%s/auth/github", os.Getenv("DEFAULT_HOST")),
+			"HerokuAuth":   fmt.Sprintf("https://%s/auth/heroku", os.Getenv("DEFAULT_HOST"))}
 	}
 }
 
@@ -46,7 +50,8 @@ func RedirectToProvider(params martini.Params, res http.ResponseWriter, req *htt
 		panic(err)
 	}
 	state := gomniauth.NewState("after", "success")
-	authUrl, err := provider.GetBeginAuthURL(state, objx.MSI("scope", "repo, repo_deployment"))
+	moreScopes := map[string]string{"github": "repo, repo_deployment", "heroku": ""}
+	authUrl, err := provider.GetBeginAuthURL(state, objx.MSI("scope", moreScopes[params["provider"]]))
 	if err != nil {
 		panic(err)
 	}

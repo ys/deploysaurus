@@ -26,5 +26,9 @@ func replaceFormatAndRef(url string, format string, ref string) string {
 }
 
 func addAuthentication(url string, auth string) string {
-	return strings.Replace(url, "://", fmt.Sprintf("://%s:x-oauth-basic@", auth), -1)
+	if auth != "" {
+		return strings.Replace(url, "://", fmt.Sprintf("://%s:x-oauth-basic@", auth), -1)
+	} else {
+		return url
+	}
 }

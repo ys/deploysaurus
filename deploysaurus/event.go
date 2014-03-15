@@ -24,9 +24,23 @@ type Payload struct {
 	HerokuApp string `json:"heroku_app"`
 }
 
+func (event *Event) SenderLogin() string {
+	if event.Sender != nil {
+		return event.Sender.Login
+	} else {
+		return "Somebody"
+	}
+}
+
 func (event *Event) Tarball() string {
 	ref := event.Sha
-	deployKey := event.Who().GitHubToken
+	who, err := event.Who()
+	var deployKey string
+	if err == nil {
+		deployKey = who.GitHubToken
+	} else {
+		deployKey = ""
+	}
 	return event.Repository.AuthenticatedArchiveUrl("", ref, deployKey)
 }
 
@@ -37,14 +51,14 @@ func (event *Event) What() string {
 	return event.Repository.FullName
 }
 
-func (event *Event) Who() *DbUser {
-	dbUser, _ := GetUserFromProvider("github", strconv.Itoa(event.Sender.Id))
-	return &dbUser
+func (event *Event) Who() (*DbUser, error) {
+	dbUser, err := getUserFromProvider("github", strconv.Itoa(event.Sender.Id))
+	return &dbUser, err
 }
 
 func (event *Event) Processable() (string, error) {
-	sender := event.Who()
-	if sender == nil {
+	sender, err := event.Who()
+	if err != nil {
 		return "No user for GitHub sender", errors.New("Bad Karma")
 	}
 	if sender.HerokuId == "" {

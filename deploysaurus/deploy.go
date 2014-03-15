@@ -42,6 +42,10 @@ func serviceUrl(herokuApp string) string {
 }
 
 func authorization(event Event) string {
-	data := []byte(fmt.Sprintf(":%s", event.Who().HerokuToken))
+	who, err := event.Who()
+	if err != nil {
+		log.Println("I can haz a user for Authorization pleazzzz")
+	}
+	data := []byte(fmt.Sprintf(":%s", who.HerokuToken))
 	return fmt.Sprintf("Authorization %s", base64.StdEncoding.EncodeToString(data))
 }

@@ -1,6 +1,7 @@
 package deploysaurus
 
 import (
+	"fmt"
 	"github.com/stretchr/gomniauth"
 	"github.com/stretchr/gomniauth/common"
 	"github.com/stretchr/gomniauth/providers/github"
@@ -14,14 +15,15 @@ var (
 )
 
 func UseGomniauth() {
+	defaultHost := os.Getenv("DEFAULT_HOST")
 	gomniauth.SetSecurityKey(os.Getenv("SECRET_TOKEN"))
 	gomniauth.WithProviders(
 		github.New(os.Getenv("GITHUB_CLIENT_ID"),
 			os.Getenv("GITHUB_CLIENT_SECRET"),
-			os.Getenv("GITHUB_REDIRECT_URL")),
+			fmt.Sprintf("https://%s%s", defaultHost, os.Getenv("GITHUB_REDIRECT_URL"))),
 		heroku.New(os.Getenv("HEROKU_CLIENT_ID"),
 			os.Getenv("HEROKU_CLIENT_SECRET"),
-			os.Getenv("HEROKU_REDIRECT_URL")),
+			fmt.Sprintf("https://%s%s", defaultHost, os.Getenv("HEROKU_REDIRECT_URL"))),
 	)
 
 }

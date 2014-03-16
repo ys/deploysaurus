@@ -20,10 +20,10 @@ func UseGomniauth() {
 	gomniauth.WithProviders(
 		github.New(os.Getenv("GITHUB_CLIENT_ID"),
 			os.Getenv("GITHUB_CLIENT_SECRET"),
-			fmt.Sprintf("https://%s%s", defaultHost, os.Getenv("GITHUB_REDIRECT_URL"))),
+			fmt.Sprintf("%s%s", defaultHost, os.Getenv("GITHUB_REDIRECT_URL"))),
 		heroku.New(os.Getenv("HEROKU_CLIENT_ID"),
 			os.Getenv("HEROKU_CLIENT_SECRET"),
-			fmt.Sprintf("https://%s%s", defaultHost, os.Getenv("HEROKU_REDIRECT_URL"))),
+			fmt.Sprintf("%s%s", defaultHost, os.Getenv("HEROKU_REDIRECT_URL"))),
 	)
 
 }

@@ -11,15 +11,15 @@ import (
 	"strconv"
 )
 
-func HandleRoot(user DbUser) (int, interface{}) {
+func HandleRoot(user DbUser, db DB) (int, interface{}) {
 	if user.Authenticated == true {
 		return 200, user
 	} else {
-		count, _ := GetUsersCount()
+		count, _ := db.GetUsersCount()
 		return 200, map[string]interface{}{"DaysWithoutAccident": count,
 			"LastAccident": "Dinosaur attack",
-			"GitHubAuth":   fmt.Sprintf("https://%s/auth/github", os.Getenv("DEFAULT_HOST")),
-			"HerokuAuth":   fmt.Sprintf("https://%s/auth/heroku", os.Getenv("DEFAULT_HOST"))}
+			"GitHubAuth":   fmt.Sprintf("%s/auth/github", os.Getenv("DEFAULT_HOST")),
+			"HerokuAuth":   fmt.Sprintf("%s/auth/heroku", os.Getenv("DEFAULT_HOST"))}
 	}
 }
 
@@ -32,16 +32,19 @@ func HandleLogout(session sessions.Session, res http.ResponseWriter, req *http.R
 	http.Redirect(res, req, "/", 302)
 
 }
-func HandleHooksWrapper(events chan<- Event) martini.Handler {
-	return func(event Event, res http.ResponseWriter) (int, interface{}) {
-		fmt.Println(event.Who().Email, "want to deploy", event.What(), ":", event)
-		message, err := event.Processable()
-		if err != nil {
-			return 400, map[string]interface{}{"success": false, "message": message}
-		}
-		events <- event
-		return 202, map[string]interface{}{"success": true, "message": "Event dispatched"}
+func HandleHooks(db DB, events chan<- Event, event Event, res http.ResponseWriter) (int, interface{}) {
+	fmt.Println(event.SenderLogin(), "want to deploy", event.What(), ":", event)
+	dbUser, err := db.GetUserFromProvider("github", strconv.Itoa(event.Sender.Id))
+	if err != nil {
+		return 400, map[string]interface{}{"success": false, "message": "User not found"}
 	}
+	event.Sender.DbUser = dbUser
+	message, err := event.Processable()
+	if err != nil {
+		return 400, map[string]interface{}{"success": false, "message": message}
+	}
+	events <- event
+	return 202, map[string]interface{}{"success": true, "message": "Event dispatched"}
 }
 
 func RedirectToProvider(params martini.Params, res http.ResponseWriter, req *http.Request) {
@@ -58,7 +61,7 @@ func RedirectToProvider(params martini.Params, res http.ResponseWriter, req *htt
 	http.Redirect(res, req, authUrl, 302)
 }
 
-func CallbackHandler(params martini.Params, req *http.Request, res http.ResponseWriter, s sessions.Session, dbUser DbUser) {
+func CallbackHandler(db DB, params martini.Params, req *http.Request, res http.ResponseWriter, s sessions.Session, dbUser DbUser) {
 	user, err := GetDistantUser(params["provider"], req.URL.RawQuery)
 	if err != nil {
 		http.Redirect(res, req, fmt.Sprintf("/me?%s", err), 302)
@@ -71,7 +74,7 @@ func CallbackHandler(params martini.Params, req *http.Request, res http.Response
 		} else {
 			id = creds.Get("id").Str()
 		}
-		tmpUser, err := GetUserFromProvider(params["provider"], id)
+		tmpUser, err := db.GetUserFromProvider(params["provider"], id)
 		if err == nil {
 			dbUser = tmpUser
 		}
@@ -88,7 +91,7 @@ func CallbackHandler(params martini.Params, req *http.Request, res http.Response
 		dbUser.HerokuId = creds.Get("id").Str()
 		dbUser.HerokuRefreshToken = creds.Get("refresh_token").Str()
 	}
-	id, _ := SaveUser(dbUser)
+	id, _ := db.SaveUser(dbUser)
 	s.Set(SessionKey, id)
 	http.Redirect(res, req, "/me", 302)
 }

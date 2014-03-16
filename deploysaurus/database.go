@@ -8,25 +8,48 @@ import (
 	"os"
 )
 
-type DB struct {
+type DB interface {
+	SaveUser(user DbUser) (string, error)
+	CreateUser(user DbUser) (string, error)
+	UpdateUser(user DbUser) (string, error)
+	GetUser(id string) (DbUser, error)
+	GetUserFromProvider(provider string, id string) (DbUser, error)
+	GetUsersCount() (int, error)
+}
+
+type DeployDB struct {
 	*sql.DB
 }
 
-func SaveUser(user DbUser) (string, error) {
+func (db DeployDB) SaveUser(user DbUser) (string, error) {
 	if user.Id != "" {
-		return UpdateUser(user)
+		return db.UpdateUser(user)
 	} else {
-		return CreateUser(user)
+		return db.CreateUser(user)
 	}
 }
 
-func UpdateUser(user DbUser) (string, error) {
-	db, err := getDB()
+func (db DeployDB) CreateUser(user DbUser) (string, error) {
+	stmt, err := db.Prepare(createStatement())
 	if err != nil {
-		log.Println(err)
+		log.Fatal(err)
 		return "", err
 	}
-	stmt, err := db.Prepare(UpdateStatement())
+	var id string
+	err = stmt.QueryRow(user.Email,
+		user.GitHubId,
+		user.GitHubLogin,
+		user.GitHubToken,
+		user.HerokuId,
+		user.HerokuToken,
+		user.HerokuRefreshToken,
+		user.HerokuExpiration).Scan(&id)
+	stmt.Close()
+	return id, err
+}
+
+func (db DeployDB) UpdateUser(user DbUser) (string, error) {
+	stmt, err := db.Prepare(updateStatement())
 	if err != nil {
 		log.Fatal(err)
 		return "", err
@@ -42,70 +65,12 @@ func UpdateUser(user DbUser) (string, error) {
 		user.HerokuRefreshToken,
 		user.HerokuExpiration).Scan(&id)
 	stmt.Close()
-	db.Close()
 	return id, err
 }
 
-func CreateUser(user DbUser) (string, error) {
-	db, err := getDB()
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-	stmt, err := db.Prepare(CreateStatement())
-	if err != nil {
-		log.Fatal(err)
-		return "", err
-	}
-	var id string
-	err = stmt.QueryRow(user.Email,
-		user.GitHubId,
-		user.GitHubLogin,
-		user.GitHubToken,
-		user.HerokuId,
-		user.HerokuToken,
-		user.HerokuRefreshToken,
-		user.HerokuExpiration).Scan(&id)
-	stmt.Close()
-	db.Close()
-	return id, err
-}
-
-func CreateStatement() string {
-	return `INSERT INTO users (email,
-                                   github_id,
-                                   github_login,
-                                   github_token,
-                                   heroku_id,
-                                   heroku_token,
-                                   heroku_refresh_token,
-                                   heroku_expiration)
-                                 values ($1, $2, $3, $4, $5, $6, $7, $8)
-                                 RETURNING id`
-}
-
-func UpdateStatement() string {
-	return `UPDATE users SET   email=$2,
-                                   github_id=$3,
-                                   github_login=$4,
-                                   github_token=$5,
-                                   heroku_id=$6,
-                                   heroku_token=$7,
-                                   heroku_refresh_token=$8,
-                                   heroku_expiration=$9
-                                   WHERE id=$1
-                                   RETURNING id`
-}
-
-func GetUser(id string) (DbUser, error) {
-	db, err := getDB()
-	defer db.Close()
-	if err != nil {
-		log.Fatal(err)
-		panic(err)
-	}
+func (db DeployDB) GetUser(id string) (DbUser, error) {
 	var u DbUser
-	err = db.QueryRow(`SELECT * FROM users WHERE id=$1`, id).Scan(&u.Id,
+	err := db.QueryRow(`SELECT * FROM users WHERE id=$1`, id).Scan(&u.Id,
 		&u.Email,
 		&u.GitHubLogin,
 		&u.GitHubId,
@@ -120,15 +85,9 @@ func GetUser(id string) (DbUser, error) {
 	return u, err
 }
 
-func GetUserFromProvider(provider string, id string) (DbUser, error) {
-	db, err := getDB()
-	defer db.Close()
-	if err != nil {
-		log.Fatal(err)
-		panic(err)
-	}
+func (db DeployDB) GetUserFromProvider(provider string, id string) (DbUser, error) {
 	var u DbUser
-	err = db.QueryRow(fmt.Sprintf("SELECT * FROM users WHERE %s_id=$1", provider), id).Scan(&u.Id,
+	err := db.QueryRow(fmt.Sprintf("SELECT * FROM users WHERE %s_id=$1", provider), id).Scan(&u.Id,
 		&u.Email,
 		&u.GitHubLogin,
 		&u.GitHubId,
@@ -143,15 +102,9 @@ func GetUserFromProvider(provider string, id string) (DbUser, error) {
 	return u, err
 }
 
-func GetUsersCount() (int, error) {
-	db, err := getDB()
-	defer db.Close()
-	if err != nil {
-		log.Fatal(err)
-		panic(err)
-	}
+func (db DeployDB) GetUsersCount() (int, error) {
 	var count int
-	err = db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -159,12 +112,38 @@ func GetUsersCount() (int, error) {
 
 }
 
-func getDB() (*DB, error) {
+var GetDB = func() (DB, error) {
 	url := os.Getenv("DATABASE_URL")
 	db, err := sql.Open("postgres", url)
 	if err != nil {
 		return nil, err
 	}
 
-	return &DB{db}, nil
+	return DeployDB{db}, nil
+}
+
+func createStatement() string {
+	return `INSERT INTO users (email,
+                                    github_id,
+                                    github_login,
+                                    github_token,
+                                    heroku_id,
+                                    heroku_token,
+                                    heroku_refresh_token,
+                                    heroku_expiration)
+                            values ($1, $2, $3, $4, $5, $6, $7, $8)
+                            RETURNING id`
+}
+
+func updateStatement() string {
+	return `UPDATE users SET   email=$2,
+                                    github_id=$3,
+                                    github_login=$4,
+                                    github_token=$5,
+                                    heroku_id=$6,
+                                    heroku_token=$7,
+                                    heroku_refresh_token=$8,
+                                    heroku_expiration=$9
+                                    WHERE id=$1
+                                    RETURNING id`
 }

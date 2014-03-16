@@ -17,14 +17,13 @@ func CheckEvent() martini.Handler {
 	}
 }
 
-func SessionUser() martini.Handler {
+func SessionUser(db DB) martini.Handler {
 	return func(s sessions.Session, c martini.Context) {
 		userId := s.Get(SessionKey)
-
 		user := DbUser{Authenticated: false}
 		var err error
 		if userId != nil {
-			user, err = GetUser(userId.(string))
+			user, err = db.GetUser(userId.(string))
 			if user.Id != "" {
 				user.Authenticated = true
 			}

@@ -2,7 +2,6 @@ package deploysaurus
 
 import (
 	"errors"
-	"strconv"
 )
 
 type Event struct {
@@ -16,8 +15,9 @@ type Event struct {
 }
 
 type Sender struct {
-	Id    int    `json:"id"`
-	Login string `json:"login"`
+	Id     int    `json:"id"`
+	Login  string `json:"login"`
+	DbUser DbUser
 }
 
 type Payload struct {
@@ -51,9 +51,8 @@ func (event *Event) What() string {
 	return event.Repository.FullName
 }
 
-func (event *Event) Who() (*DbUser, error) {
-	dbUser, err := getUserFromProvider("github", strconv.Itoa(event.Sender.Id))
-	return &dbUser, err
+func (event *Event) Who() (DbUser, error) {
+	return event.Sender.DbUser, nil
 }
 
 func (event *Event) Processable() (string, error) {

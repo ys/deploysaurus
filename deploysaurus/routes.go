@@ -38,7 +38,7 @@ func HandleHooks(db DB, events chan<- Event, event Event, res http.ResponseWrite
 	if err != nil {
 		return 400, map[string]interface{}{"success": false, "message": "User not found"}
 	}
-	event.Sender.DbUser = dbUser
+	event.Sender.DbUser = &dbUser
 	message, err := event.Processable()
 	if err != nil {
 		return 400, map[string]interface{}{"success": false, "message": message}

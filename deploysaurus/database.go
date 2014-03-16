@@ -109,7 +109,6 @@ func (db DeployDB) GetUsersCount() (int, error) {
 		log.Fatal(err)
 	}
 	return count, err
-
 }
 
 var GetDB = func() (DB, error) {
@@ -118,7 +117,6 @@ var GetDB = func() (DB, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return DeployDB{db}, nil
 }
 

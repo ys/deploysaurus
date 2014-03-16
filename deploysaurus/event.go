@@ -17,7 +17,7 @@ type Event struct {
 type Sender struct {
 	Id     int    `json:"id"`
 	Login  string `json:"login"`
-	DbUser DbUser
+	DbUser *DbUser
 }
 
 type Payload struct {
@@ -34,9 +34,9 @@ func (event *Event) SenderLogin() string {
 
 func (event *Event) Tarball() string {
 	ref := event.Sha
-	who, err := event.Who()
+	who := event.Who()
 	var deployKey string
-	if err == nil {
+	if who != nil {
 		deployKey = who.GitHubToken
 	} else {
 		deployKey = ""
@@ -51,18 +51,22 @@ func (event *Event) What() string {
 	return event.Repository.FullName
 }
 
-func (event *Event) Who() (DbUser, error) {
-	return event.Sender.DbUser, nil
+func (event *Event) Who() *DbUser {
+	if event.Sender != nil {
+		return event.Sender.DbUser
+	} else {
+		return nil
+	}
 }
 
 func (event *Event) Processable() (string, error) {
-	sender, err := event.Who()
-	if err != nil {
-		return "No user for GitHub sender", errors.New("Bad Karma")
+	sender := event.Who()
+	if sender == nil {
+		return "No user for GitHub sender", errors.New("No GitHub")
 	}
 	if sender.HerokuId == "" {
 		return "User not linked to Heroku, visit http://deploysaurus.yannick.io/auth/heroku when logged in",
-			errors.New("Bad karma")
+			errors.New("No Heroku")
 	}
 	return "", nil
 	//TODO: Verify if app is writable on Heroku for sender Heroku doppelganger

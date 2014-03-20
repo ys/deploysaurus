@@ -6,8 +6,10 @@ import (
 )
 
 type Repository struct {
-	FullName   string `json:"full_name"`
-	ArchiveUrl string `json:"archive_url"`
+	FullName    string `json:"full_name"`
+	ArchiveUrl  string `json:"archive_url"`
+	Url         string `json:"url"`
+	StatusesUrl string `json:"statuses_url"`
 }
 
 func (repo *Repository) AuthenticatedArchiveUrl(format string, ref string, authToken string) string {

@@ -7,12 +7,26 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 type Deployment struct {
 	Id        string `json:"id"`
 	Status    string `json:"status"`
 	CreatedAt string `json:"created_at"`
+	Event     *Event
+}
+
+type DeployStatus struct {
+	Status string `json:"status"`
+}
+
+func (d *Deployment) Url() string {
+	return fmt.Sprintf("%s/%s", serviceUrl(d.Event.Payload.HerokuApp), d.Id)
+}
+
+func (d *Deployment) ResultUrl() string {
+	return fmt.Sprintf("%s/result", d.Url())
 }
 
 func Deploysaurus(n int, events <-chan Event) {
@@ -24,16 +38,49 @@ func Deploysaurus(n int, events <-chan Event) {
 
 func Deploy(event Event) string {
 	deployment, _ := LaunchDeployment(event)
-	PostDeploymentStatus(*deployment, event)
+	ticker := time.NewTicker(time.Second * 20)
+	herokuStateToGitHub := map[string]string{"started": "pending",
+		"pending":   "pending",
+		"succeeded": "success",
+		"failed":    "failure",
+		"error":     "error"}
+
+	for _ = range ticker.C {
+		status := GetDeployState(*deployment, event)
+		log.Println(status)
+		PostDeploymentStatus(*deployment, event, herokuStateToGitHub[status])
+		if herokuStateToGitHub[status] != "pending" {
+			ticker.Stop()
+		}
+	}
 	return "OK"
 }
 
-func PostDeploymentStatus(deployment Deployment, event Event) {
+func GetDeployState(d Deployment, event Event) string {
 	client := &http.Client{}
-	targetUrl := fmt.Sprintf("%s/%s/result", serviceUrl(event.Payload.HerokuApp), deployment.Id)
-	body := bytes.NewBufferString(fmt.Sprintf(`{"state":"pending", "target_url":"%s"}`, targetUrl))
+	req, err := http.NewRequest("GET", d.Url(), nil)
+	req.Header.Add("Accept", "application/vnd.heroku+json; version=3")
+	req.Header.Add("Authorization", authorization(event))
+	response, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return "error"
+	}
+	defer response.Body.Close()
+	contents, err := ioutil.ReadAll(response.Body)
+	var ds DeployStatus
+	err = json.Unmarshal(contents, &ds)
+	if err != nil {
+		return "error"
+	}
+	return ds.Status
+}
+
+func PostDeploymentStatus(deployment Deployment, event Event, state string) {
+	client := &http.Client{}
+	targetUrl := deployment.ResultUrl()
+	body := bytes.NewBufferString(fmt.Sprintf(`{"state":"%s", "target_url":"%s"}`, state, targetUrl))
 	url := fmt.Sprintf("%s/deployments/%d/statuses", event.Repository.Url, event.Id)
-	log.Println(url)
 	req, err := http.NewRequest("POST", url, body)
 	req.Header.Add("Accept", "application/vnd.github.cannonball-preview+json")
 	req.Header.Add("Content-Type", "application/json")
@@ -53,6 +100,7 @@ func LaunchDeployment(event Event) (*Deployment, error) {
 	req, err := http.NewRequest("POST", serviceUrl(event.Payload.HerokuApp), body)
 	req.Header.Add("Accept", "application/vnd.heroku+json; version=3")
 	req.Header.Add("Content-Type", "application/json")
+	log.Println(authorization(event))
 	req.Header.Add("Authorization", authorization(event))
 	response, err := client.Do(req)
 	if err != nil {
@@ -67,6 +115,7 @@ func LaunchDeployment(event Event) (*Deployment, error) {
 	if err != nil {
 		return nil, err
 	}
+	deployment.Event = &event
 	return &deployment, nil
 }
 

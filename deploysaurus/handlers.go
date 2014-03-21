@@ -10,7 +10,12 @@ import (
 func CheckEvent() martini.Handler {
 	return func(context martini.Context, res http.ResponseWriter, req *http.Request) {
 		eventType := req.Header.Get("X-GitHub-Event")
-		if eventType != "deployment" {
+		switch eventType {
+		case "deployment":
+		case "deployment_status":
+			response := &Response{Status: 200, Body: map[string]interface{}{"success": true}}
+			WriteJsonResponse(response, res)
+		default:
 			response := &Response{Status: 400, Body: map[string]interface{}{"success": false, "error_message": "This endpoint only supports deployments events"}}
 			WriteJsonResponse(response, res)
 		}

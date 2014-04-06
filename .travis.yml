@@ -10,3 +10,5 @@ matrix:
     - go: 1.1.2
     - go: release
     - go: tip
+install:
+  - scripts/deps
